@@ -8,7 +8,7 @@ class PlayerUIView: UIView {
 
     init(player: AVPlayer) {
         playerLayer.player = player
-        playerLayer.videoGravity = .resizeAspectFill
+        playerLayer.videoGravity = .resizeAspect
         super.init(frame: .zero)
         backgroundColor = .black
         layer.addSublayer(playerLayer)
@@ -61,6 +61,7 @@ struct FeedSlide: View {
     let isActive: Bool
 
     @EnvironmentObject private var store: Store
+    @EnvironmentObject private var auth: Auth
     @State private var player: AVPlayer?
     @State private var paused = false
     @State private var liked = false
@@ -75,7 +76,7 @@ struct FeedSlide: View {
                 Color.black
             }
             // 上下渐隐
-            LinearGradient(colors: [.black.opacity(0.5), .clear, .clear, .black.opacity(0.5)],
+            LinearGradient(colors: [.black.opacity(0.55), .clear, .clear, .black.opacity(0.85)],
                            startPoint: .top, endPoint: .bottom)
                 .allowsHitTesting(false)
 
@@ -87,7 +88,7 @@ struct FeedSlide: View {
                     sideOps
                 }
                 .padding(.horizontal, 16)
-                .padding(.bottom, 20)
+                .padding(.bottom, 92)
             }
             .allowsHitTesting(true)
 
@@ -122,10 +123,14 @@ struct FeedSlide: View {
                 paused = false
             }
         }
+        .onChange(of: auth.username) { name in
+            if name != nil && isActive { play() }
+        }
         .sheet(isPresented: $showEps) { EpisodeSheet(drama: drama) }
     }
 
     private func play() {
+        guard auth.username != nil else { return }   // 未登录不播，避免登录页漏声音
         player?.play()
         paused = false
     }
