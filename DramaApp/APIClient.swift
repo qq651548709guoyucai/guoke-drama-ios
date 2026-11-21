@@ -6,7 +6,15 @@ import UIKit
 //  例：后台跑在电脑 192.168.1.8 上 → "http://192.168.1.8:5000"
 // ==================================================================
 enum API {
-    static var baseURL = "http://192.168.1.8:5000"
+    static var baseURL = "https://a1b500e225e2978b3.app.workbuddy.host"
+    /// 在线后台的访问凭据（换自建后台后可置空）
+    static var sharecode = "UDXMUMOTVJ"
+
+    private static func makeURL(_ path: String) -> URL? {
+        let sep = path.contains("?") ? "&" : "?"
+        let full = sharecode.isEmpty ? baseURL + path : baseURL + path + sep + "sharecode=" + sharecode
+        return URL(string: full)
+    }
 
     static var token: String? {
         get { UserDefaults.standard.string(forKey: "api_token") }
@@ -35,7 +43,7 @@ enum API {
     }
 
     private static func post(_ path: String, body: [String: Any]) async throws -> Data {
-        guard let url = URL(string: baseURL + path) else { throw APIError.bad("服务器地址无效") }
+        guard let url = makeURL(path) else { throw APIError.bad("服务器地址无效") }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -71,7 +79,7 @@ enum API {
     /// 校验 token，返回用户名；无效返回 nil
     static func me() async -> String? {
         guard let t = token,
-              let url = URL(string: baseURL + "/api/me") else { return nil }
+              let url = makeURL("/api/me") else { return nil }
         var req = URLRequest(url: url)
         req.setValue("Bearer \(t)", forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 8
