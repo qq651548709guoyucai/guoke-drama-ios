@@ -63,7 +63,7 @@ struct MineView: View {
                         } else {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 10) {
-                                    ForEach(sampleDramas.filter { store.favorites.contains($0.id) }) { d in
+                                    ForEach(store.dramas.filter { store.favorites.contains($0.id) }) { d in
                                         VStack(alignment: .leading, spacing: 5) {
                                             RoundedRectangle(cornerRadius: 8)
                                                 .fill(d.gradient)

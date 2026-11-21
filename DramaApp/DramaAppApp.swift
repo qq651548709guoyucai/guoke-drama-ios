@@ -17,10 +17,11 @@ struct DramaAppApp: App {
 /// 根视图：三个 Tab + 未登录时强制弹登录
 struct RootView: View {
     @EnvironmentObject private var auth: Auth
+    @EnvironmentObject private var store: Store
 
     var body: some View {
         TabView {
-            FeedView(dramas: sampleDramas)
+            FeedView(dramas: store.dramas)
                 .tabItem { Label("首页", systemImage: "house.fill") }
             TheaterView()
                 .tabItem { Label("剧场", systemImage: "film.stack.fill") }

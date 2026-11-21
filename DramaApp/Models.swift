@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct Drama: Identifiable {
+struct Drama: Identifiable, Codable {
     let id: Int
     let title: String
     let cat: String

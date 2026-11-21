@@ -32,6 +32,10 @@ enum API {
         let msg: String?
         let username: String?
     }
+    struct DramasResp: Decodable {
+        let code: Int
+        let list: [Drama]
+    }
 
     enum APIError: LocalizedError {
         case bad(String)
@@ -91,6 +95,20 @@ enum API {
         return name
     }
 
+    /// 拉取后台动态剧集库（后台 dramas.json / 未来对接 CPS 短剧 API）
+    static func loadDramas() async -> [Drama]? {
+        guard let url = makeURL("/api/dramas") else { return nil }
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 15
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let wrapped = try? JSONDecoder().decode(DramasResp.self, from: data),
+              !wrapped.list.isEmpty else {
+            return nil
+        }
+        return wrapped.list
+    }
+
     /// 上报观看进度（静默，失败不影响使用）
     static func saveProgress(dramaId: Int, episode: Int) {
         Task {
@@ -127,8 +145,11 @@ final class Auth: ObservableObject {
     }
 }
 
-/// 本地数据（收藏 / 进度），并同步到后台
+/// 本地数据（收藏 / 进度 / 剧集库），并同步到后台
 final class Store: ObservableObject {
+    @Published var dramas: [Drama] = sampleDramas {
+        didSet { if let data = try? JSONEncoder().encode(dramas) { UserDefaults.standard.set(data, forKey: "dramas_cache") } }
+    }
     @Published var favorites: Set<Int> {
         didSet { UserDefaults.standard.set(Array(favorites), forKey: "favs") }
     }
@@ -147,6 +168,21 @@ final class Store: ObservableObject {
             progress = p
         } else {
             progress = [:]
+        }
+        // 启动时优先用本地缓存的剧集库，随后从后台刷新
+        if let data = UserDefaults.standard.data(forKey: "dramas_cache"),
+           let cached = try? JSONDecoder().decode([Drama].self, from: data), !cached.isEmpty {
+            dramas = cached
+        }
+        refreshDramas()
+    }
+
+    /// 从后台拉取剧集库，失败保持现有内容
+    func refreshDramas() {
+        Task {
+            if let list = await API.loadDramas() {
+                await MainActor.run { self.dramas = list }
+            }
         }
     }
 

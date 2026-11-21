@@ -3,11 +3,12 @@ import AVKit
 import AVFoundation
 
 struct TheaterView: View {
+    @EnvironmentObject private var store: Store
     @State private var cat = "全部"
     private let cats = ["全部", "逆袭", "甜宠", "悬疑", "古装", "重生", "都市", "脑洞"]
 
     private var list: [Drama] {
-        sampleDramas.filter { cat == "全部" || $0.cat == cat }.sorted { $0.hot > $1.hot }
+        store.dramas.filter { cat == "全部" || $0.cat == cat }.sorted { $0.hot > $1.hot }
     }
 
     var body: some View {
