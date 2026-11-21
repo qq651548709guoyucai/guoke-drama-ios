@@ -184,6 +184,11 @@ struct LoginView: View {
                     .disabled(loading || username.isEmpty || password.isEmpty)
                 }
                 .padding(.horizontal, 34)
+
+                Text("v3 · 在线后台版")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 6)
             }
         }
     }
@@ -199,10 +204,31 @@ struct LoginView: View {
                 await MainActor.run { auth.onLogin(name) }
             } catch {
                 await MainActor.run {
-                    err = error.localizedDescription
+                    err = friendly(error)
                     loading = false
                 }
             }
         }
+    }
+
+    /// 把网络错误翻译成能看懂的中文，方便排查
+    private func friendly(_ e: Error) -> String {
+        if let ae = e as? API.APIError {
+            return ae.errorDescription ?? "请求失败"
+        }
+        let ns = e as NSError
+        if ns.domain == NSURLErrorDomain {
+            switch ns.code {
+            case NSURLErrorTimedOut:
+                return "请求超时，检查网络"
+            case NSURLErrorCannotFindHost, NSURLErrorCannotConnectToHost:
+                return "连不上服务器"
+            case NSURLErrorNotConnectedToInternet:
+                return "手机未联网"
+            default:
+                return "网络错误 \(ns.code)"
+            }
+        }
+        return e.localizedDescription
     }
 }
