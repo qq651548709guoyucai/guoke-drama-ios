@@ -4,6 +4,7 @@ import AVFoundation
 
 struct TheaterView: View {
     @EnvironmentObject private var store: Store
+    @EnvironmentObject private var app: AppState
     @State private var cat = "全部"
     private let cats = ["全部", "逆袭", "甜宠", "悬疑", "古装", "重生", "都市", "脑洞"]
 
@@ -28,6 +29,10 @@ struct TheaterView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
+
+                    if !store.cps.isEmpty {
+                        cpsSection
+                    }
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
@@ -58,6 +63,76 @@ struct TheaterView: View {
             .navigationBarHidden(true)
         }
         .navigationViewStyle(.stack)
+    }
+    /// CPS 正版短剧专区（链接由后台 cps.json 下发）
+    private var cpsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color(hex: "FFD166"))
+                Text("正版短剧")
+                    .font(.system(size: 15, weight: .bold))
+                Text("完整剧集 · 高清")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(Array(store.cps.enumerated()), id: \.element.id) { i, item in
+                        Button { open(item) } label: { cpsCard(item, index: i) }
+                            .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+        .padding(.top, 6)
+    }
+
+    private func cpsCard(_ item: CPSItem, index: Int) -> some View {
+        let palette: [Color] = [Color(hex: "3A2E7A"), Color(hex: "7A2E4E"),
+                                Color(hex: "7A4A1E"), Color(hex: "1E4B45")]
+        let base = palette[index % palette.count]
+        return VStack(alignment: .leading, spacing: 6) {
+            ZStack {
+                LinearGradient(colors: [base, base.opacity(0.45)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                Image(systemName: "play.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(.white.opacity(0.9))
+            }
+            .frame(width: 116, height: 150)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(alignment: .topLeading) {
+                Text(item.tag ?? "正版")
+                    .font(.system(size: 9, weight: .semibold))
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(Color(hex: "FFD166"))
+                    .foregroundStyle(.black)
+                    .cornerRadius(4)
+                    .padding(6)
+            }
+
+            Text(item.title)
+                .font(.system(size: 12, weight: .medium))
+                .lineLimit(2)
+                .frame(width: 116, alignment: .leading)
+            Text(item.sub ?? "点击观看完整剧集")
+                .font(.system(size: 10))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .frame(width: 116, alignment: .leading)
+        }
+    }
+
+    private func open(_ item: CPSItem) {
+        guard let url = URL(string: item.url) else { return }
+        API.clickCPS(id: item.id)   // 记录点击，后台可看引流数据
+        app.web = WebTarget(id: item.id, url: url, title: item.title)
     }
 }
 

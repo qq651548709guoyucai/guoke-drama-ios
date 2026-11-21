@@ -185,7 +185,7 @@ struct LoginView: View {
                 }
                 .padding(.horizontal, 34)
 
-                Text("v6 · 在线后台版")
+                Text("v7 · 在线后台版")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .padding(.top, 6)

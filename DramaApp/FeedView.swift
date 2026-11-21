@@ -62,10 +62,16 @@ struct FeedSlide: View {
 
     @EnvironmentObject private var store: Store
     @EnvironmentObject private var auth: Auth
+    @EnvironmentObject private var appState: AppState
     @State private var player: AVPlayer?
     @State private var paused = false
     @State private var liked = false
     @State private var showEps = false
+
+    /// 只有「首页 Tab + 当前页 + 没弹选集」时才播放，切到别的页面必须静音
+    private var shouldPlay: Bool {
+        isActive && appState.tab == 0 && !showEps
+    }
 
     var body: some View {
         ZStack {
@@ -117,20 +123,28 @@ struct FeedSlide: View {
             }
             if isActive { play() }
         }
-        .onChange(of: isActive) { active in
-            if active { play() } else {
+        .onChange(of: shouldPlay) { v in
+            if v { play() } else {
                 player?.pause()
                 paused = false
             }
         }
         .onChange(of: auth.username) { name in
-            if name != nil && isActive { play() }
+            if name != nil && shouldPlay { play() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .pauseFeedPlayback)) { _ in
+            player?.pause()
+            paused = false
+        }
+        .onDisappear {
+            player?.pause()
+            paused = false
         }
         .sheet(isPresented: $showEps) { EpisodeSheet(drama: drama) }
     }
 
     private func play() {
-        guard auth.username != nil else { return }   // 未登录不播，避免登录页漏声音
+        guard auth.username != nil, shouldPlay else { return }   // 未登录 / 不在首页时不播，避免漏声音
         player?.play()
         paused = false
     }

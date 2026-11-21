@@ -109,6 +109,29 @@ enum API {
         return wrapped.list
     }
 
+    struct CPSResp: Decodable {
+        let code: Int
+        let list: [CPSItem]
+    }
+
+    /// 拉取 CPS 正版短剧专区（后台 cps.json 配置的推广链接）
+    static func loadCPS() async -> [CPSItem] {
+        guard let url = makeURL("/api/cps") else { return [] }
+        var req = URLRequest(url: url)
+        req.timeoutInterval = 12
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let wrapped = try? JSONDecoder().decode(CPSResp.self, from: data) else {
+            return []
+        }
+        return wrapped.list
+    }
+
+    /// 记录 CPS 点击（用于后台统计引流效果、对账分成）
+    static func clickCPS(id: Int) {
+        Task { _ = try? await post("/api/cps/click", body: ["cps_id": id]) }
+    }
+
     /// 上报观看进度（静默，失败不影响使用）
     static func saveProgress(dramaId: Int, episode: Int) {
         Task {
@@ -175,6 +198,7 @@ final class Store: ObservableObject {
             dramas = cached
         }
         refreshDramas()
+        refreshCPS()
     }
 
     /// 从后台拉取剧集库，失败保持现有内容
@@ -183,6 +207,15 @@ final class Store: ObservableObject {
             if let list = await API.loadDramas() {
                 await MainActor.run { self.dramas = list }
             }
+        }
+    }
+
+    /// 拉取 CPS 专区
+    @Published var cps: [CPSItem] = []
+    func refreshCPS() {
+        Task {
+            let list = await API.loadCPS()
+            await MainActor.run { self.cps = list }
         }
     }
 

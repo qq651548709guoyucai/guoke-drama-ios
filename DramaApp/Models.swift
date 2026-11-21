@@ -18,6 +18,16 @@ struct Drama: Identifiable, Codable {
     }
 }
 
+/// CPS 正版短剧专区条目（后台 cps.json 下发，url 是你的推广链接，带渠道追踪参数）
+struct CPSItem: Identifiable, Codable {
+    let id: Int
+    let title: String
+    let sub: String?
+    let tag: String?
+    let url: String
+    var clicks: Int?
+}
+
 extension Color {
     init(hex: String) {
         var h = hex.trimmingCharacters(in: .whitespacesAndNewlines)
