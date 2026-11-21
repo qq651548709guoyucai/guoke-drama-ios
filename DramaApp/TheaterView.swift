@@ -1,4 +1,6 @@
 import SwiftUI
+import AVKit
+import AVFoundation
 
 struct TheaterView: View {
     @State private var cat = "全部"
